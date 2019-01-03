@@ -114,17 +114,18 @@ def getLines(img, center_points,number_windows,window_half_width):
 
                     lane_lines[line_index].append([lane_lines_points_x, lane_lines_points_y])
 
-    print(lane_lines)
+
 
     for linee in lane_lines[1]:
         cv2.circle(img,
                    (int(linee[0]),
                     int(linee[1]))
                    , 5, (111, 111, 111), -1)
-        print(linee)
+        
     plt.figure("dog")
     plt.imshow(img)
     plt.show()
+    return lane_lines
 
 
 def segment(img):
