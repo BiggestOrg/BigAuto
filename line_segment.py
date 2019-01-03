@@ -116,24 +116,62 @@ def getLines(img, center_points,number_windows,window_half_width):
 
 
 
-    for linee in lane_lines[1]:
-        cv2.circle(img,
-                   (int(linee[0]),
-                    int(linee[1]))
-                   , 5, (111, 111, 111), -1)
+    #for linee in lane_lines[1]:
+    #    cv2.circle(img,
+    #               (int(linee[0]),
+    #                int(linee[1]))
+    #               , 5, (111, 111, 111), -1)
         
-    plt.figure("dog")
-    plt.imshow(img)
-    plt.show()
+    #plt.figure("dog")
+    #plt.imshow(img)
+    #plt.show()
     return lane_lines
 
+def polyfit(lane_lines,img):
+    for lane_line in lane_lines:
+        arr = np.vstack(lane_line)
+        x = arr.reshape((-1,1),order='F').reshape((2,-1))[0]
+        print('x坐标')
+        print(x)
+
+        y = arr.reshape((-1,1),order='F').reshape((2,-1))[1]
+        print('y坐标')
+        print(y)
+
+        z1 = np.polyfit(x, y, 3)#用3次多项式拟合
+        print('多项式系数')
+        print(z1)
+
+        p1 = np.poly1d(z1)
+        print('多项式方程')
+        print(p1)#在屏幕上打印拟合多项式
+
+        yvals=p1(x)#也可以使用yvals=np.polyval(z1,x)
+        print('代入x求y值')
+        print(yvals)
+
+        xvals=p1(y)#也可以使用yvals=np.polyval(z1,x)
+        print('代入y求x值')
+
+        left_fitx = x
+        ploty = yvals
+        margin = 10
+
+        left_line_window1 = np.array([np.transpose(np.vstack([left_fitx - margin, ploty]))])
+        left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([left_fitx + margin, ploty])))])
+        left_line_pts = np.hstack((left_line_window1, left_line_window2))
+
+        # Draw the lane onto the warped blank image
+        cv2.fillPoly(img, np.int_([left_line_pts]), (255, 255, 0))
 
 def segment(img):
     points = get_centers(img)
-    return getLines(img, points,25,50)
+    lane_lines =  getLines(img, points,25,50)
+    polyfit(lane_lines,img)
+    cv2.imwrite("img.jpeg", img)
 
-#img = cv2.imread("3.jpeg", cv2.IMREAD_GRAYSCALE)
-#segment(img)
+img = cv2.imread("3.jpeg", cv2.IMREAD_GRAYSCALE)
+segment(img)
 
 
 
