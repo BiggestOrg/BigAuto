@@ -9,10 +9,12 @@ from sklearn.cluster import MeanShift, estimate_bandwidth
 
 
 
-def getLines(img, center_points,number_windows,window_half_width):
+def getLines(img, center_points,window_half_width):
     img_h, img_w = img.shape[:2]
 
-    window_height = math.floor(img_h / number_windows)
+    window_height = WINDOW_HEIGHT
+    
+    number_windows = int(img_h/window_height)
 
     # 所有白色的点的位置
     nonzero = img.nonzero()
@@ -166,7 +168,7 @@ def polyfit(lane_lines,img):
 
 def segment(img):
     points = get_centers(img)
-    lane_lines =  getLines(img, points,25,50)
+    lane_lines =  getLines(img, points,50)
     polyfit(lane_lines,img)
     cv2.imwrite("img.jpeg", img)
 
