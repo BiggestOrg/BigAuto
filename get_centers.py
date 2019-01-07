@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 import time
 from matplotlib import pyplot as plt
-from itertools import cycle
 from sklearn.cluster import MeanShift, estimate_bandwidth
 
 WINDOW_HEIGHT = 10
@@ -16,80 +15,71 @@ def get_nonzero(image):
     return np.stack((nonzero_x, nonzero_y), axis=-1)
 
 
-def mean_shift(h,image, line):
+def mean_shift(src, line):
     """聚类并在结果数组中插入行号"""
-    bandwidth = estimate_bandwidth(image, quantile=0.4, n_samples=500)
+    bandwidth = estimate_bandwidth(src, quantile=0.2, n_samples=500)
 
-    ms = MeanShift(bandwidth=bandwidth, bin_seeding=True)
-    ms.fit(image)
+    ms = MeanShift(bandwidth=bandwidth, bin_seeding=True, cluster_all=False)
+    ms.fit(src)
+
     labels = ms.labels_
     cluster_centers = ms.cluster_centers_
-    # 插入行号
-    print (h)
-    centers = np.insert(cluster_centers, 0, values=int(line), axis=1)
-    for pot in centers:
-        pot[2]= h - (line+1) *WINDOW_HEIGHT + pot[2]
-    print("--")
-    print(centers)
+
     labels_unique = np.unique(labels)
-    n_clusters_ = len(labels_unique)
+    # n_clusters_ = len(labels_unique)
 
-    # print("点数: ", n_clusters_, "\n", cluster_centers)
+    # 插入行号
+    centers = np.insert(cluster_centers, 0, values=line, axis=1)
 
-    return centers.astype(np.int32)
+    for pot in centers:
+        pot[2] = img.shape[0] - (line + 1) * WINDOW_HEIGHT + pot[2]
+
+    return centers
 
 
 def get_centers(image):
     """按行对图片聚类并返回三维数组"""
     h = image.shape[0]
-    image_h = image.shape[0]
+
     start_time = time.time()
     count = 0
     results = []
     while h - WINDOW_HEIGHT > 0:
-        print(count)
         split_img = image[h - WINDOW_HEIGHT: h, ]
         nonzero = get_nonzero(split_img)
         if nonzero.size > 0:
-            points = mean_shift(image_h,nonzero, count)
-            results.append(points.tolist())
+            points = mean_shift(nonzero, count)
+            results.append(points)
         h -= WINDOW_HEIGHT
         count += 1
     end_time = time.time()
 
     print("image shape", image.shape, "窗口高度", WINDOW_HEIGHT, "循环次数", count, "执行时间", end_time - start_time, "s")
 
-    return results
+    return np.array(results)
 
 
-#img = cv2.imread('3.jpeg', cv2.IMREAD_GRAYSCALE)
-#img = np.zeros((20, 20), np.uint8)
-#X = get_centers(img)
-#print("------->\n", X)
+img = cv2.imread('images/3.png', cv2.IMREAD_GRAYSCALE)
+blur_img = cv2.GaussianBlur(img, (5, 5), 0)
 
-#
-# print("number of estimated clusters : %d" % n_clusters_)
-#
-# # #############################################################################
-# # Plot result
-# plt.figure(1)
-# plt.clf()
-#
-# colors = cycle('r')
-# for k, col in zip(range(n_clusters_), colors):
-#     my_members = labels == k
-#     cluster_center = cluster_centers[k]
-#     plt.plot(X[my_members, 0], X[my_members, 1], col + '.')
-#     plt.plot(cluster_center[0], cluster_center[1], 'o', markerfacecolor=col,
-#              markeredgecolor='k', markersize=14)
-#     print(cluster_center[0], cluster_center[1], sep=",")
-#
-# print(img.shape)
-# print(img.size)
-# print(img.dtype)
-#
-# plt.imshow(img)
-# plt.title('Estimated number of clusters: %d' % n_clusters_)
-# # plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-# # plt.axis('off')
-# plt.show()
+# 阈值转换
+ret, threshold_img = cv2.threshold(blur_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+# 形态转换（过滤噪点）
+kernel = np.ones((5, 5), np.uint8)
+opening = cv2.morphologyEx(threshold_img, cv2.MORPH_OPEN, kernel)
+
+# 输出图形及聚类后的点
+plt.subplot(211)
+plt.imshow(img, cmap='gray')
+plt.subplot(212)
+
+X = get_centers(opening)
+print("------->\n", X)
+for lane in X:
+    for po in lane:
+        cv2.circle(opening,
+                   (int(po[1]), int(po[2])), 5, (111, 111, 111), -1)
+
+plt.imshow(opening, cmap='gray')
+plt.show()
