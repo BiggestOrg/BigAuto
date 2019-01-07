@@ -1,6 +1,7 @@
-import numpy as np
-import cv2
 import time
+
+import cv2
+import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.cluster import MeanShift, estimate_bandwidth
 
@@ -41,11 +42,21 @@ def get_centers(image):
     """按行对图片聚类并返回三维数组"""
     h = image.shape[0]
 
+    # 高斯模糊
+    blur_img = cv2.GaussianBlur(img, (5, 5), 0)
+
+    # 阈值转换
+    ret, threshold_img = cv2.threshold(blur_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # 形态转换（过滤噪点）
+    kernel = np.ones((5, 5), np.uint8)
+    opening_img = cv2.morphologyEx(threshold_img, cv2.MORPH_OPEN, kernel)
+
     start_time = time.time()
     count = 0
     results = []
     while h - WINDOW_HEIGHT > 0:
-        split_img = image[h - WINDOW_HEIGHT: h, ]
+        split_img = opening_img[h - WINDOW_HEIGHT: h, ]
         nonzero = get_nonzero(split_img)
         if nonzero.size > 0:
             points = mean_shift(nonzero, count)
@@ -54,32 +65,24 @@ def get_centers(image):
         count += 1
     end_time = time.time()
 
-    print("image shape", image.shape, "窗口高度", WINDOW_HEIGHT, "循环次数", count, "执行时间", end_time - start_time, "s")
+    print("image shape", opening_img.shape, "窗口高度", WINDOW_HEIGHT, "循环次数", count, "执行时间", end_time - start_time, "s")
 
-    return np.array(results)
+    return np.array(results), opening_img
 
 
 img = cv2.imread('images/3.png', cv2.IMREAD_GRAYSCALE)
-blur_img = cv2.GaussianBlur(img, (5, 5), 0)
-
-# 阈值转换
-ret, threshold_img = cv2.threshold(blur_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-# 形态转换（过滤噪点）
-kernel = np.ones((5, 5), np.uint8)
-opening = cv2.morphologyEx(threshold_img, cv2.MORPH_OPEN, kernel)
 
 # 输出图形及聚类后的点
 plt.subplot(211)
 plt.imshow(img, cmap='gray')
 plt.subplot(212)
 
-X = get_centers(opening)
+X, filter_img = get_centers(img)
 print("------->\n", X)
 for lane in X:
     for po in lane:
-        cv2.circle(opening,
+        cv2.circle(filter_img,
                    (int(po[1]), int(po[2])), 5, (111, 111, 111), -1)
 
-plt.imshow(opening, cmap='gray')
+plt.imshow(filter_img, cmap='gray')
 plt.show()
