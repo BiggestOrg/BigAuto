@@ -73,15 +73,15 @@ def get_centers(image, ms_window_height):
 
 
 def main():
-    img = cv2.imread('res/img/c6_1.jpg', cv2.IMREAD_GRAYSCALE)
+    img = cv2.imread('res/img/3.png', cv2.IMREAD_GRAYSCALE)
 
     # 输出图形及聚类后的点
     plt.subplot(211)
     plt.imshow(img, cmap='gray')
     plt.subplot(212)
 
-    points, filter_img = get_centers(img, 30)
-    print("------->\n", points)
+    points, filter_img = get_centers(img, 10)
+    print("------->\n", np.array(points))
     for p in points:
         for po in p:
             cv2.circle(filter_img,
