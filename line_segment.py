@@ -201,7 +201,7 @@ def segment(img):
     polyfit(lane_lines,img)
     cv2.imwrite("img.jpeg", img)
 
-img = cv2.imread("3.jpeg", cv2.IMREAD_GRAYSCALE)
+img = cv2.imread("res/img/3.png", cv2.IMREAD_GRAYSCALE)
 segment(img)
 
 
