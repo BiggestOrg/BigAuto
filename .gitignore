@@ -163,3 +163,8 @@ venv.bak/
 .idea/misc.xml
 .idea/modules.xml
 .idea/vcs.xml
+
+# big file folds
+data/
+output/
+model/
