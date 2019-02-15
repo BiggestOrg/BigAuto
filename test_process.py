@@ -14,11 +14,14 @@ W = 1920
 H = 1080
 K_SIMILAR = 0.01
 B_SIMILAR = 100
-LEFT_RULER = [0, int(H / 3), int(W / 2), H]
-RIGHT_RULER = [W, int(H / 3), int(W / 2), H]
+LEFT_RULER = [0, int(2 * H / 5), int(W / 2), H]
+RIGHT_RULER = [W, int(2 * H / 5), int(W / 2), H]
 MID_POINT_RERION = [int(W / 3), int(H / 4), int(2 * W / 3), int(2 * H / 3)]
 MID_POINT_R = 30
 MID_POINT_QUEUE_LENGTH = 5
+
+left_lane_color  = [[255, 0, 0], [255, 0, 200], [255, 0, 255], [255, 100, 255], [255, 255, 255]]
+right_lane_color = [[0, 255, 0], [0, 255, 200], [0, 255, 255], [100, 255, 255], [255, 255, 255]]
 
 
 def classify_lines(lines):
@@ -251,7 +254,7 @@ def slide_window(birdeye, win_width=30, win_height=30, find_max_index_width=80, 
     for start_index in arr_maxindex:
         cur_win_mid = start_index
         offset = 0
-        lane = Lane()
+        lane = Lane(start_index)
         for i in range(H, 0, -win_height):
             cur_win_left = cur_win_mid - win_width
             cur_win_right = cur_win_mid + win_width
@@ -259,7 +262,7 @@ def slide_window(birdeye, win_width=30, win_height=30, find_max_index_width=80, 
             cur_win_bottom = i
             cur_win = birdeye_bin[cur_win_top:cur_win_bottom, cur_win_left: cur_win_right]
             cur_win_his = np.sum(cur_win // 255, axis=0)
-            print("cur_win_his = ", cur_win_his)
+            # print("cur_win_his = ", cur_win_his)
 
             cur_win_max_index = win_width  # default value for max_index
             if sum(cur_win_his) > 0:
@@ -275,7 +278,7 @@ def slide_window(birdeye, win_width=30, win_height=30, find_max_index_width=80, 
                 offset = offset * .99
             else:
                 offset = cur_max_index - cur_win_mid
-            print(offset)
+            # print(offset)
 
             cur_win_mid = int(cur_win_mid + offset)
 
@@ -303,8 +306,8 @@ def slide_window(birdeye, win_width=30, win_height=30, find_max_index_width=80, 
 
 
 def main():
-    cap = cv2.VideoCapture("output/output10.avi")
-    v = cv2.VideoCapture("data/test10.mp4")
+    cap = cv2.VideoCapture("output/output2.avi")
+    v = cv2.VideoCapture("data/test2.mp4")
     if not cap.isOpened():
         return
 
@@ -371,10 +374,9 @@ def main():
         draw = cv2.line(draw, (int(W / 2), 0), (int(W/2), H), (255,255,255))
         draw = cv2.line(draw, (0, int(H/2)), (W, int(H/2)), (255,255,255))
 
-        cv2.imshow("debug", draw)
         #endregion debug draw
 
-        pt1 = np.array([[0,mid_pt[1]+10], [1920,mid_pt[1]+10], [0,1080], [1920,1080]], dtype='float32')
+        pt1 = np.array([[0,int(mid_pt[1] * 1.045)], [1920,int(mid_pt[1]*1.045)], [0,1080], [1920,1080]], dtype='float32')
         pt2 = np.array([[0,0], [1920,0], [(1920) * 0.48,1080],[(1920) * 0.52,1080]], dtype='float32')
         M = cv2.getPerspectiveTransform(pt1, pt2)
 
@@ -391,16 +393,59 @@ def main():
         # core code
         MatAll = np.dot(Mat2, M)
         MatAll = np.dot(Mat3, MatAll)
+        MatInv = np.linalg.inv(MatAll)
 
         birdeye_draw = cv2.warpPerspective(frame, MatAll, (1920, 1080))
         birdeye = cv2.warpPerspective(gray, MatAll, (1920,1080))
 
         lanes = slide_window(birdeye, birdeye_debug=birdeye_draw)
 
+        # order lanes
+        lanes_order = [lane.start_index for lane in lanes]
+        lanes_order.sort()
+        mid = np.argwhere(np.array(lanes_order) > (W / 2))[0][0] # maybe bug, if no right lanes
+        for lane in lanes:
+            order_offset = 0
+            if lane.right():
+                order_offset =1
+            lane.order = lanes_order.index(lane.start_index) - mid + order_offset
+
+        for lane in lanes:
+            if lane.sum_pt_num() < 1000:
+                continue
+
+            last_frame_pt = None
+            color = [255, 255, 255]
+            if lane.left():
+                color = left_lane_color[-lane.order - 1]
+            else:
+                color = right_lane_color[lane.order - 1]
+            for pt in lane.points:
+                if pt[2] > 10:
+                    vec_pt_birdeye = [pt[0], pt[1], 1]
+                    vec_pt_frame = np.dot(MatInv, vec_pt_birdeye)
+                    pt_frame_x = int(vec_pt_frame[0] / vec_pt_frame[2])
+                    pt_frame_y = int(vec_pt_frame[1] / vec_pt_frame[2])
+                    if not ((0 < pt_frame_x < W) & (0 < pt_frame_y < H)):
+                        continue
+
+                    pt_frame = (pt_frame_x, pt_frame_y)
+                    f = cv2.circle(f, pt_frame, 5, color)
+
+                    if last_frame_pt is not None:
+                        f = cv2.line(f, last_frame_pt, pt_frame, color)
+                    last_frame_pt = pt_frame
+
+        draw = cv2.resize(draw, (W // 2, H // 2))
+        cv2.imshow("debug", draw)
+
+        birdeye = cv2.resize(birdeye, (W // 2, H // 2))
         cv2.imshow("birdeye", birdeye)
 
+        birdeye_draw = cv2.resize(birdeye_draw, (W // 2, H // 2))
         cv2.imshow("birdeye_debug", birdeye_draw)
 
+        f = cv2.resize(f, (W // 2, H //2))
         cv2.imshow("frame", f)
 
         k = cv2.waitKey(0)
@@ -410,12 +455,23 @@ def main():
 
 
 class Lane:
-    def __init__(self):
+    def __init__(self, start_index):
         self.points = []
+        self.start_index = start_index
+        self.order = 0
         pass
+
+    def left(self):
+        return self.start_index < (W / 2)
+
+    def right(self):
+        return self.start_index >= (W / 2)
 
     def add_point(self, x, y, num=1):
         self.points.append([x, y, num])
+
+    def sum_pt_num(self):
+        return sum([pt[2] for pt in self.points])
 
 
 if __name__ == '__main__':
