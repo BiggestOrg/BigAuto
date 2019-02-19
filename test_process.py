@@ -1,11 +1,11 @@
-import cv2
 import math
-import numpy as np
 from collections import deque
 
+import cv2
+import numpy as np
 
 lines = []
-tmpline = [(0,0),(0,0)]
+tmpline = [(0, 0), (0, 0)]
 avgindex = deque()
 mid_point_queue = deque()
 
@@ -20,7 +20,7 @@ MID_POINT_RERION = [int(W / 3), int(H / 4), int(2 * W / 3), int(2 * H / 3)]
 MID_POINT_R = 30
 MID_POINT_QUEUE_LENGTH = 5
 
-left_lane_color  = [[255, 0, 0], [255, 0, 200], [255, 0, 255], [255, 100, 255], [255, 255, 255]]
+left_lane_color = [[255, 0, 0], [255, 0, 200], [255, 0, 255], [255, 100, 255], [255, 255, 255]]
 right_lane_color = [[0, 255, 0], [0, 255, 200], [0, 255, 255], [100, 255, 255], [255, 255, 255]]
 
 
@@ -43,7 +43,7 @@ def classify_lines(lines):
             k_mean = (cl[0] * cl[2] + k) / (cl[2] + 1)
             b_mean = (cl[1] * cl[2] + b) / (cl[2] + 1)
             class_lines[j] = [k_mean, b_mean, cl[2] + 1]
-            flag =1
+            flag = 1
         if flag:
             continue
         else:
@@ -63,11 +63,11 @@ def calc_edge_point(k, b):
         pt.append((int(W), int(y)))
 
     x = -b / k
-    if (x >=0) & (x <= W):
+    if (x >= 0) & (x <= W):
         pt.append((int(x), 0))
 
     x = (H - b) / k
-    if (x >=0) & (x <= W):
+    if (x >= 0) & (x <= W):
         pt.append((int(x), int(H)))
 
     return pt
@@ -85,7 +85,7 @@ def calc_distance2(x0, y0, x1, y1):
     return (x0 - x1) ** 2 + (y0 - y1) ** 2
 
 
-def calc_cross_point(k1, b1, k2, b2, line1 = None, line2 = None):
+def calc_cross_point(k1, b1, k2, b2, line1=None, line2=None):
     """ get cross point from two line """
     if k1 == k2:
         return None, None
@@ -144,7 +144,7 @@ def filter_lines(lines):
     # left  ruler y = (h / w) * x + (h / 2)
     # right ruler y = (-2 * h / w) * x + (3 * h / 2)
     ruler_left_k, ruler_left_b = calc_k_b(LEFT_RULER)
-    ruler_right_k,ruler_right_b= calc_k_b(RIGHT_RULER)
+    ruler_right_k, ruler_right_b = calc_k_b(RIGHT_RULER)
     ret_lines = []
     cross_pt = []
     for ll in lines:
@@ -161,7 +161,7 @@ def filter_lines(lines):
         # cross point on right ruler
         x1, y1 = calc_cross_point(k, b, ruler_right_k, ruler_right_b, RIGHT_RULER)
         if x1 is not None:
-            flag +=1
+            flag += 1
             cross_pt.append((int(x1), int(y1)))
 
         # print("filter lines param : ", k, b, x0, y0, x1, y1, flag)
@@ -179,7 +179,7 @@ def filter_lines2(lines):
 
     # find all cross if it's in MID_POINT_REGION
     for i in range(length):
-        for j in range(i+1, length):
+        for j in range(i + 1, length):
             line1 = lines[i]
             line2 = lines[j]
             x, y = calc_cross_point(line1[0], line1[1], line2[0], line2[1])
@@ -219,18 +219,18 @@ def filter_lines2(lines):
     return mid_point, cross_pt
 
 
-def find_max_index(histogram, width = 100):
+def find_max_index(histogram, width=100):
     """ find max index from histogram(array) """
     arr_maxindex = []
     i = width
     while i <= len(histogram) - width:
-        tmp_his = histogram[i:i+width]
+        tmp_his = histogram[i:i + width]
         if sum(tmp_his) == 0:
             i += width
             continue
         tmp_max_index = np.argwhere(tmp_his == np.max(tmp_his))
         max_index = tmp_max_index[0][0] + i
-        if histogram[max_index] >= np.max(histogram[max_index-width:max_index+width]):
+        if histogram[max_index] >= np.max(histogram[max_index - width:max_index + width]):
             arr_maxindex.append(max_index)
             i = max_index + width
         else:
@@ -240,7 +240,8 @@ def find_max_index(histogram, width = 100):
     return arr_maxindex
 
 
-def slide_window(birdeye, win_width=30, win_height=30, find_max_index_width=80, find_max_index_height=300, birdeye_debug=None):
+def slide_window(birdeye, win_width=30, win_height=30, find_max_index_width=80, find_max_index_height=300,
+                 birdeye_debug=None):
     """ slice lane by slice window
     :param birdeye: gray birdeye of lane image
     :return lanes: array of lane
@@ -284,11 +285,11 @@ def slide_window(birdeye, win_width=30, win_height=30, find_max_index_width=80, 
 
             # debug
             birdeye_debug = cv2.rectangle(birdeye_debug, (cur_win_left, cur_win_top), (cur_win_right, cur_win_bottom),
-                                         (255, 0, 0))
+                                          (255, 0, 0))
             if sum(cur_win_his) == 0:
-                    birdeye_debug = cv2.circle(birdeye_debug, (cur_max_index, i), 3, (255, 255, 0))
+                birdeye_debug = cv2.circle(birdeye_debug, (cur_max_index, i), 3, (255, 255, 0))
             else:
-                    birdeye_debug = cv2.circle(birdeye_debug, (cur_max_index, i), 3, (0, 255, 255))
+                birdeye_debug = cv2.circle(birdeye_debug, (cur_max_index, i), 3, (0, 255, 255))
 
             '''
             if k!= 0:
@@ -322,7 +323,7 @@ def main():
         # calc lane
 
         draw = frame.copy()
-        gray_canny = cv2.Canny(gray, threshold1=50, threshold2=200, edges=1) # TODO: use LSD
+        gray_canny = cv2.Canny(gray, threshold1=50, threshold2=200, edges=1)  # TODO: use LSD
         houghlines_org = cv2.HoughLinesP(gray_canny, 1, 3.1415 / 180, threshold=100, minLineLength=50, maxLineGap=1000)
         if houghlines_org is None:
             print("no houghline found")
@@ -332,18 +333,18 @@ def main():
         mid_points, debug_cross_pt = filter_lines2(join_lines)
         mid_pt = calc_mid_point(mid_points)
 
-        #region debug draw
+        # region debug draw
         # draw joined line green
         for l in join_lines:
             edge_pt = calc_edge_point(l[0], l[1])
-            draw = cv2.line(draw, edge_pt[0], edge_pt[1], (0,255,0), thickness=2)
+            draw = cv2.line(draw, edge_pt[0], edge_pt[1], (0, 255, 0), thickness=2)
 
         # draw hough line red
         for l in houghlines_org:
             if len(l) > 1:
                 print(l)
             l = l[0]
-            draw = cv2.line(draw, (l[0], l[1]), (l[2], l[3]), (0,0,255), 3)
+            draw = cv2.line(draw, (l[0], l[1]), (l[2], l[3]), (0, 0, 255), 3)
 
         # draw crossed ruler debug point
         for p in debug_pt:
@@ -361,29 +362,37 @@ def main():
         draw = cv2.circle(draw, (int(mid_pt[0]), int(mid_pt[1])), 7, (0, 255, 255), thickness=4)
 
         # draw debug ruler
-        draw = cv2.line(draw, (LEFT_RULER[0], LEFT_RULER[1]), (LEFT_RULER[2], LEFT_RULER[3]), (255, 255, 0), thickness=2)
-        draw = cv2.line(draw, (RIGHT_RULER[0],RIGHT_RULER[1]), (RIGHT_RULER[2], RIGHT_RULER[3]), (255, 255, 0), thickness=2)
+        draw = cv2.line(draw, (LEFT_RULER[0], LEFT_RULER[1]), (LEFT_RULER[2], LEFT_RULER[3]), (255, 255, 0),
+                        thickness=2)
+        draw = cv2.line(draw, (RIGHT_RULER[0], RIGHT_RULER[1]), (RIGHT_RULER[2], RIGHT_RULER[3]), (255, 255, 0),
+                        thickness=2)
 
         # draw mid point ruler
-        draw = cv2.line(draw, (MID_POINT_RERION[0], MID_POINT_RERION[1]), (MID_POINT_RERION[0], MID_POINT_RERION[3]), (255,255,0))
-        draw = cv2.line(draw, (MID_POINT_RERION[0], MID_POINT_RERION[1]), (MID_POINT_RERION[2], MID_POINT_RERION[1]), (255,255,0))
-        draw = cv2.line(draw, (MID_POINT_RERION[0], MID_POINT_RERION[3]), (MID_POINT_RERION[2], MID_POINT_RERION[3]), (255,255,0))
-        draw = cv2.line(draw, (MID_POINT_RERION[2], MID_POINT_RERION[1]), (MID_POINT_RERION[2], MID_POINT_RERION[3]), (255,255,0))
+        draw = cv2.line(draw, (MID_POINT_RERION[0], MID_POINT_RERION[1]), (MID_POINT_RERION[0], MID_POINT_RERION[3]),
+                        (255, 255, 0))
+        draw = cv2.line(draw, (MID_POINT_RERION[0], MID_POINT_RERION[1]), (MID_POINT_RERION[2], MID_POINT_RERION[1]),
+                        (255, 255, 0))
+        draw = cv2.line(draw, (MID_POINT_RERION[0], MID_POINT_RERION[3]), (MID_POINT_RERION[2], MID_POINT_RERION[3]),
+                        (255, 255, 0))
+        draw = cv2.line(draw, (MID_POINT_RERION[2], MID_POINT_RERION[1]), (MID_POINT_RERION[2], MID_POINT_RERION[3]),
+                        (255, 255, 0))
 
         # draw mid line
-        draw = cv2.line(draw, (int(W / 2), 0), (int(W/2), H), (255,255,255))
-        draw = cv2.line(draw, (0, int(H/2)), (W, int(H/2)), (255,255,255))
+        draw = cv2.line(draw, (int(W / 2), 0), (int(W / 2), H), (255, 255, 255))
+        draw = cv2.line(draw, (0, int(H / 2)), (W, int(H / 2)), (255, 255, 255))
 
-        #endregion debug draw
+        # endregion debug draw
 
-        pt1 = np.array([[0,int(mid_pt[1] * 1.045)], [1920,int(mid_pt[1]*1.045)], [0,1080], [1920,1080]], dtype='float32')
-        pt2 = np.array([[0,0], [1920,0], [(1920) * 0.48,1080],[(1920) * 0.52,1080]], dtype='float32')
+        pt1 = np.array([[0, int(mid_pt[1] * 1.045)], [1920, int(mid_pt[1] * 1.045)], [0, 1080], [1920, 1080]],
+                       dtype='float32')
+        pt2 = np.array([[0, 0], [1920, 0], [(1920) * 0.48, 1080], [(1920) * 0.52, 1080]], dtype='float32')
         M = cv2.getPerspectiveTransform(pt1, pt2)
 
-        t = (mid_pt[0] - W / 2) / (mid_pt[1] - H) / 2 # TODO : why /2 ?
-        Mat2_1 = np.array([[1, 0, -W / 2], [0, 1, -H], [0, 0, 1]], dtype='float32') # 平移下边界中点到原点
-        Mat2_2 = np.array([[math.cos(t), -math.sin(t), 0], [math.sin(t), math.cos(t), 0], [0, 0, 1]], dtype='float32') # 旋转t度
-        Mat2_3 = np.array([[1, 0, W/2], [0, 1, H], [0, 0, 1]], dtype='float32') # 平移原点到下边界中点
+        t = (mid_pt[0] - W / 2) / (mid_pt[1] - H) / 2  # TODO : why /2 ?
+        Mat2_1 = np.array([[1, 0, -W / 2], [0, 1, -H], [0, 0, 1]], dtype='float32')  # 平移下边界中点到原点
+        Mat2_2 = np.array([[math.cos(t), -math.sin(t), 0], [math.sin(t), math.cos(t), 0], [0, 0, 1]],
+                          dtype='float32')  # 旋转t度
+        Mat2_3 = np.array([[1, 0, W / 2], [0, 1, H], [0, 0, 1]], dtype='float32')  # 平移原点到下边界中点
 
         Mat22 = np.dot(Mat2_2, Mat2_1)
         Mat2 = np.dot(Mat2_3, Mat22)
@@ -396,19 +405,21 @@ def main():
         MatInv = np.linalg.inv(MatAll)
 
         birdeye_draw = cv2.warpPerspective(frame, MatAll, (1920, 1080))
-        birdeye = cv2.warpPerspective(gray, MatAll, (1920,1080))
+        birdeye = cv2.warpPerspective(gray, MatAll, (1920, 1080))
 
         lanes = slide_window(birdeye, birdeye_debug=birdeye_draw)
 
         # order lanes
         lanes_order = [lane.start_index for lane in lanes]
         lanes_order.sort()
-        mid = np.argwhere(np.array(lanes_order) > (W / 2))[0][0] # maybe bug, if no right lanes
+        mid = np.argwhere(np.array(lanes_order) > (W / 2))[0][0]  # maybe bug, if no right lanes
         for lane in lanes:
             order_offset = 0
             if lane.right():
-                order_offset =1
+                order_offset = 1
             lane.order = lanes_order.index(lane.start_index) - mid + order_offset
+
+        f = create_block()
 
         for lane in lanes:
             if lane.sum_pt_num() < 1000:
@@ -430,10 +441,10 @@ def main():
                         continue
 
                     pt_frame = (pt_frame_x, pt_frame_y)
-                    f = cv2.circle(f, pt_frame, 5, color)
+                    # f = cv2.circle(f, pt_frame, 5, color)
 
                     if last_frame_pt is not None:
-                        f = cv2.line(f, last_frame_pt, pt_frame, color)
+                        f = cv2.line(f, last_frame_pt, pt_frame, (255, 0, 0), thickness=10)
                     last_frame_pt = pt_frame
 
         draw = cv2.resize(draw, (W // 2, H // 2))
@@ -445,7 +456,7 @@ def main():
         birdeye_draw = cv2.resize(birdeye_draw, (W // 2, H // 2))
         cv2.imshow("birdeye_debug", birdeye_draw)
 
-        f = cv2.resize(f, (W // 2, H //2))
+        f = cv2.resize(f, (W // 2, H // 2))
         cv2.imshow("frame", f)
 
         k = cv2.waitKey(0)
@@ -472,6 +483,32 @@ class Lane:
 
     def sum_pt_num(self):
         return sum([pt[2] for pt in self.points])
+
+
+def create_block():
+    """ generate final frame """
+    car = cv2.imread('res/img/others.png', -1)
+
+    background = np.zeros((H, W, 3), np.uint8)
+
+    x_offset = y_offset = W // 2
+    y1, y2 = y_offset, y_offset + car.shape[0]
+    x1, x2 = x_offset, x_offset + car.shape[1]
+
+    alpha_s = car[:, :, 3] / 255.0
+    alpha_l = 1.0 - alpha_s
+
+    for c in range(0, 3):
+        background[y1:y2, x1:x2, c] = (alpha_s * car[:, :, c]
+                                       + alpha_l * background[y1:y2, x1:x2, c])
+
+    # cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+    # cv2.resizeWindow('image', 1000, 1000)  # 定义frame的大小
+    # cv2.imshow('image', background)
+    # key = cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    return background
 
 
 if __name__ == '__main__':
